@@ -16,8 +16,7 @@ Follwo instruction in the `readme` file of [Ryu-OE git hub](https://github.com/o
 ## Step 2: Run Ryu-OE with LINC (Quick Start)
 First let's just test the Ryu-OE on a optical network. To do so a optical network is created. 
 The optical network is not connected to any packet switches. To be more precise, the oprical network is only connected to tap interfaces 
-on the edges. Later with the use of tap interfaces, mininet can connect its packet switches to the tap interfaces which results in 
-packet and optical network. 
+on the edges. Later with the use of tap interfaces, mininet can connect its packet switches to the tap interfaces which results in packet and optical network. 
 
 ### Step 2.1: Run Ryu-OE
 The `readme` file of [Ryu-OE git hub](https://github.com/o3project/ryu-oe) to setup the controlller. 
@@ -123,7 +122,7 @@ d. start LINC-OE:
 ```shell
 make rel && sudo rel/linc/bin/linc console
 ```
-> if make rel did not work try sudo make rel
+> if make rel did not work try `sudo make rel`
 
 ## Step 3: Use the rest API
 When you run Rye-OE with `ofctl_rest.py` file you shoudl see something like the below: 
