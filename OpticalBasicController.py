@@ -1,9 +1,16 @@
 from ryu.controller import ofp_event
 from ryu.controller.handler import set_ev_cls, CONFIG_DISPATCHER, MAIN_DISPATCHER, DEAD_DISPATCHER
-from ryu.lib.packet import icmp, ethernet, ipv4
+import logging
+from ryu.lib.packet.ethernet import ethernet
+from ryu.lib.packet.icmp import icmp
+from ryu.lib.packet.ipv6 import ipv6
 from ryu.ofproto import ofproto_v1_3, ofproto_v1_2, ofproto_v1_0
 from ryu.base import app_manager
 from ryu.lib.packet import packet
+from ryu.topology import event
+from ryu.topology.switches import LLDPPacket, Link
+
+LOG = logging.getLogger(__name__)
 
 __author__ = 'Ehsan'
 
@@ -101,9 +108,95 @@ class SimpleOpticalController(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
         msg = ev.msg
+        print "#############################################"
         datapath = msg.datapath
         print "datapath id: "+str(datapath.id)
         port = msg.match['in_port']
         print "port: "+str(port)
         pkt = packet.Packet(data=msg.data)
-        self.logger.info("packet-in %s" % (pkt,))
+        self.logger.info("packet-in: %s" % (pkt,))
+
+        pkt_ethernet_list = pkt.get_protocols(ethernet)
+        if pkt_ethernet_list:
+            pkt_ethernet = pkt_ethernet_list[0]
+            print ("pkt_ethernet: " + str(pkt_ethernet))
+            print ("pkt_ethernet:dst: " + str(pkt_ethernet.dst))
+            print ("pkt_ethernet:src: " + str(pkt_ethernet.src))
+            print ("pkt_ethernet:ethertype: " + str(pkt_ethernet.ethertype))
+
+        pkt_ipv6_list = pkt.get_protocols(ipv6)
+        if pkt_ipv6_list:
+            pkt_ipv6 = pkt_ipv6_list[0]
+            print ("pkt_ipv6: " + str(pkt_ipv6))
+            print ("pkt_ipv6:dst: " + str(pkt_ipv6.dst))
+            print ("pkt_ipv6:src: " + str(pkt_ipv6.src))
+            print ("pkt_ipv6:nxt: " + str(pkt_ipv6.nxt))
+            print ("pkt_ipv6:hop_limit: " + str(pkt_ipv6.hop_limit))
+            print ("pkt_ipv6:ext_hdrs: " + str(pkt_ipv6.ext_hdrs))
+
+        pkt_icmp_list = pkt.get_protocols(icmp)
+        if pkt_icmp_list :
+            pkt_icmp = pkt_icmp_list[0]
+            if pkt_icmp:
+                print ("pkt_icmp: "+str(pkt_icmp))
+                return
+
+        """
+        # Base is from the
+        if not self.link_discovery:
+            return
+
+        msg = ev.msg
+        try:
+            src_dpid, src_port_no = LLDPPacket.lldp_parse(msg.data)
+        except LLDPPacket.LLDPUnknownFormat as e:
+            # This handler can receive all the packtes which can be
+            # not-LLDP packet. Ignore it silently
+            return
+
+        dst_dpid = msg.datapath.id
+        if msg.datapath.ofproto.OFP_VERSION == ofproto_v1_0.OFP_VERSION:
+            dst_port_no = msg.in_port
+        elif msg.datapath.ofproto.OFP_VERSION >= ofproto_v1_2.OFP_VERSION:
+            dst_port_no = msg.match['in_port']
+        else:
+            LOG.error('cannot accept LLDP. unsupported version. %x',
+                      msg.datapath.ofproto.OFP_VERSION)
+
+        src = self._get_port(src_dpid, src_port_no)
+        if not src or src.dpid == dst_dpid:
+            return
+        try:
+            self.ports.lldp_received(src)
+        except KeyError:
+            # There are races between EventOFPPacketIn and
+            # EventDPPortAdd. So packet-in event can happend before
+            # port add event. In that case key error can happend.
+            # LOG.debug('lldp_received: KeyError %s', e)
+            pass
+
+        dst = self._get_port(dst_dpid, dst_port_no)
+        if not dst:
+            return
+
+        old_peer = self.links.get_peer(src)
+        # LOG.debug("Packet-In")
+        # LOG.debug("  src=%s", src)
+        # LOG.debug("  dst=%s", dst)
+        # LOG.debug("  old_peer=%s", old_peer)
+        if old_peer and old_peer != dst:
+            old_link = Link(src, old_peer)
+            self.send_event_to_observers(event.EventLinkDelete(old_link))
+
+        link = Link(src, dst)
+        if link not in self.links:
+            self.send_event_to_observers(event.EventLinkAdd(link))
+
+        if not self.links.update_link(src, dst):
+            # reverse link is not detected yet.
+            # So schedule the check early because it's very likely it's up
+            self.ports.move_front(dst)
+            self.lldp_event.set()
+        if self.explicit_drop:
+            self._drop_packet(msg)
+        """
