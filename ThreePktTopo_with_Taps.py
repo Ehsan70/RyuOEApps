@@ -61,7 +61,6 @@ class ThreePktTopoScratch(Topo):
         self.addIntf(p2, 'tap2')
         self.addIntf(p3, 'tap3')
 
-
         # if you use, sudo mn --custom custom/optical.py, then register the topo:
 
 
