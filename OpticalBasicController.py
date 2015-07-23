@@ -21,6 +21,7 @@ class SimpleOpticalController(app_manager.RyuApp):
         super(SimpleOpticalController, self).__init__(*args, **kwargs)
         self.dpset = {} #data['dpset']
         self.waiters = {} #data['waiters']
+        self.match_list = []
 
     @set_ev_cls([ofp_event.EventOFPStatsReply,
                  ofp_event.EventOFPDescStatsReply,
@@ -124,6 +125,8 @@ class SimpleOpticalController(app_manager.RyuApp):
             print ("pkt_ethernet:src: " + str(pkt_ethernet.src))
             print ("pkt_ethernet:ethertype: " + str(pkt_ethernet.ethertype))
 
+        print "-----------------------------------------------"
+
         pkt_ipv6_list = pkt.get_protocols(ipv6)
         if pkt_ipv6_list:
             pkt_ipv6 = pkt_ipv6_list[0]
@@ -134,6 +137,8 @@ class SimpleOpticalController(app_manager.RyuApp):
             print ("pkt_ipv6:hop_limit: " + str(pkt_ipv6.hop_limit))
             print ("pkt_ipv6:ext_hdrs: " + str(pkt_ipv6.ext_hdrs))
 
+        print "-----------------------------------------------"
+
         pkt_icmp_list = pkt.get_protocols(icmp)
         if pkt_icmp_list :
             pkt_icmp = pkt_icmp_list[0]
@@ -142,6 +147,16 @@ class SimpleOpticalController(app_manager.RyuApp):
                 return
 
         """
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+        match = parser.OFPMatch()
+
+        self.match_list.append(match)
+        print ("match list:")
+        for m in self.match_list:
+            print ("\t"+str(object=m))
+
+
         # Base is from the
         if not self.link_discovery:
             return
